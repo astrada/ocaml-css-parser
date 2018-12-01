@@ -1,0 +1,4 @@
+(test
+ (name test_suite)
+ (libraries compiler-libs.common fmt alcotest css-parser))
+

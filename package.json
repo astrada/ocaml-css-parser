@@ -1,0 +1,20 @@
+{
+  "name": "ocaml-css-parser",
+  "version": "0.1.0",
+  "description": "CSS parser written in OCaml",
+  "license": "MIT",
+  "esy": {
+    "build": "dune build"
+  },
+  "dependencies": {
+    "@opam/dune": "*",
+    "@opam/alcotest": "^0.8.4",
+    "@opam/menhir": "20181113",
+    "@opam/sedlex": "1.99.4",
+    "ocaml": "~4.6.0"
+  },
+  "devDependencies": {
+    "@opam/merlin": "^3.2.2",
+    "ocaml": "~4.6.0"
+  }
+}

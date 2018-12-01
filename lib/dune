@@ -1,0 +1,10 @@
+(menhir
+ (modules menhir_parser)
+ (flags --explain))
+
+(library
+ (name Css)
+ (public_name css-parser)
+ (libraries compiler-libs.common sedlex menhirLib)
+ (preprocess (pps sedlex.ppx)))
+
