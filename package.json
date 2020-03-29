@@ -4,7 +4,12 @@
   "description": "CSS parser written in OCaml",
   "license": "MIT",
   "esy": {
-    "build": "dune build"
+    "build": [
+      "dune build -p css-parser"
+    ],
+    "install": [
+      "dune install --prefix=#{self.install}"
+    ]
   },
   "dependencies": {
     "@opam/dune": "*",
