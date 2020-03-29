@@ -730,6 +730,33 @@ let test_empty_stylesheet () =
   Alcotest.(check (testable Css_fmt_printer.dump_stylesheet eq_ast))
     "different CSS AST" expected_ast ast
 
+let test_negative_numbers () =
+  let css =
+    {|
+      {
+        margin: -10px;
+      }
+    |}
+  in
+  let ast = parse_stylesheet css in
+  let expected_ast =
+    ([Rule.Style_rule
+        {Style_rule.prelude = ([], Location.none);
+         block =
+           ([Declaration_list.Declaration
+               {Declaration.name = ("margin", Location.none);
+                  value = ([(Component_value.Float_dimension ("-10", "px", Length), Location.none)], Location.none);
+                  important = (false, Location.none);
+                  loc = Location.none;
+                 };
+            ], Location.none);
+         loc = Location.none;
+        };
+     ], Location.none)
+  in
+  Alcotest.(check (testable Css_fmt_printer.dump_stylesheet eq_ast))
+    "different CSS AST" expected_ast ast
+
 let test_set =
   [("CSS parser", `Quick, test_stylesheet_parser);
    ("CSS functions", `Quick, test_css_functions);
@@ -749,4 +776,5 @@ let test_set =
    ("id selector", `Quick, test_id_selector);
    ("class selector", `Quick, test_class_selector);
    ("empty stylesheet", `Quick, test_empty_stylesheet);
+   ("negative values", `Quick, test_negative_numbers);
   ]
