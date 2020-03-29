@@ -8,6 +8,7 @@ let rec zip xs ys =
 
 let eq_ast ast1 ast2 =
   let eq_list xs ys eq =
+    List.length xs = List.length ys &&
     List.fold_left
       (fun e (x, y) -> e && eq x y)
       true
@@ -87,18 +88,6 @@ let eq_ast ast1 ast2 =
   in
   eq_stylesheet ast1 ast2
 
-let parse_stylesheet css =
-  try Css.Parser.parse_stylesheet css with
-  | Css.Lexer.LexingError (pos, _) ->
-    failwith
-      ("Lexing error at: " ^ Css.Lexer.position_to_string pos)
-  | Css.Lexer.ParseError (token, start, finish) ->
-    failwith
-      (Printf.sprintf "Parsing error: Unexpected token=%s start=%s end=%s"
-         (Css.Lexer.token_to_string token)
-         (Css.Lexer.position_to_string start)
-         (Css.Lexer.position_to_string finish))
-
 let test_stylesheet_parser () =
   let css =
     {|
@@ -112,7 +101,7 @@ p q r {
 }
 |}
   in
-  let ast = parse_stylesheet css in
+  let ast = Css.Parser.parse_stylesheet css in
   let expected_ast =
     ([Rule.Style_rule
         {Style_rule.prelude = ([], Location.none);
@@ -154,7 +143,7 @@ let test_css_functions () =
 }
 |}
   in
-  let ast = parse_stylesheet css in
+  let ast = Css.Parser.parse_stylesheet css in
   let expected_ast =
     ([Rule.Style_rule
         {Style_rule.prelude = ([], Location.none);
@@ -192,7 +181,7 @@ let test_at_rule_page () =
 }
 |}
   in
-  let ast = parse_stylesheet css in
+  let ast = Css.Parser.parse_stylesheet css in
   let expected_ast =
     ([Rule.At_rule
         {At_rule.name = ("page", Location.none);
@@ -218,7 +207,7 @@ let test_at_rule_charset () =
 @charset "utf-8";
 |}
   in
-  let ast = parse_stylesheet css in
+  let ast = Css.Parser.parse_stylesheet css in
   let expected_ast =
     ([Rule.At_rule
         {At_rule.name = ("charset", Location.none);
@@ -237,7 +226,7 @@ let test_at_rule_import () =
 @import url("fineprint.css") print;
 |}
   in
-  let ast = parse_stylesheet css in
+  let ast = Css.Parser.parse_stylesheet css in
   let expected_ast =
     ([Rule.At_rule
         {At_rule.name = ("import", Location.none);
@@ -260,7 +249,7 @@ let test_at_rule_namespace () =
 @namespace url(http://www.w3.org/1999/xhtml);
 |}
   in
-  let ast = parse_stylesheet css in
+  let ast = Css.Parser.parse_stylesheet css in
   let expected_ast =
     ([Rule.At_rule
         {At_rule.name = ("namespace", Location.none);
@@ -284,7 +273,7 @@ let test_at_rule_media () =
 }
 |}
   in
-  let ast = parse_stylesheet css in
+  let ast = Css.Parser.parse_stylesheet css in
   let expected_ast =
     ([Rule.At_rule
         {At_rule.name = ("media", Location.none);
@@ -335,7 +324,7 @@ let test_at_rule_supports () =
 }
 |}
   in
-  let ast = parse_stylesheet css in
+  let ast = Css.Parser.parse_stylesheet css in
   let expected_ast =
     ([Rule.At_rule
         {At_rule.name = ("supports", Location.none);
@@ -394,7 +383,7 @@ let test_at_rule_document () =
 }
 |}
   in
-  let ast = parse_stylesheet css in
+  let ast = Css.Parser.parse_stylesheet css in
   let expected_ast =
     ([Rule.At_rule
         {At_rule.name = ("document", Location.none);
@@ -431,7 +420,7 @@ let test_at_rule_font_face () =
 }
 |}
   in
-  let ast = parse_stylesheet css in
+  let ast = Css.Parser.parse_stylesheet css in
   let expected_ast =
     ([Rule.At_rule
         {At_rule.name = ("font-face", Location.none);
@@ -483,7 +472,7 @@ let test_at_rule_keyframes () =
 }
 |}
   in
-  let ast = parse_stylesheet css in
+  let ast = Css.Parser.parse_stylesheet css in
   let expected_ast =
     ([Rule.At_rule
         {At_rule.name = ("keyframes", Location.none);
@@ -543,7 +532,7 @@ let test_at_rule_viewport () =
 }
 |}
   in
-  let ast = parse_stylesheet css in
+  let ast = Css.Parser.parse_stylesheet css in
   let expected_ast =
     ([Rule.At_rule
         {At_rule.name = ("viewport", Location.none);
@@ -573,7 +562,7 @@ let test_at_rule_counter_style () =
 }
 |}
   in
-  let ast = parse_stylesheet css in
+  let ast = Css.Parser.parse_stylesheet css in
   let expected_ast =
     ([Rule.At_rule
         {At_rule.name = ("counter-style", Location.none);
@@ -615,7 +604,7 @@ let test_at_rule_font_feature_values () =
 }
 |}
   in
-  let ast = parse_stylesheet css in
+  let ast = Css.Parser.parse_stylesheet css in
   let expected_ast =
     ([Rule.At_rule
         {At_rule.name = ("font-feature-values", Location.none);
@@ -653,7 +642,7 @@ let test_hover_selector () =
 }
 |}
   in
-  let ast = parse_stylesheet css in
+  let ast = Css.Parser.parse_stylesheet css in
   let expected_ast =
     ([Rule.Style_rule
         {Style_rule.prelude = (
@@ -683,7 +672,7 @@ let test_id_selector () =
 }
 |}
   in
-  let ast = parse_stylesheet css in
+  let ast = Css.Parser.parse_stylesheet css in
   let expected_ast =
     ([Rule.Style_rule
         {Style_rule.prelude = (
@@ -712,7 +701,7 @@ let test_class_selector () =
 }
 |}
   in
-  let ast = parse_stylesheet css in
+  let ast = Css.Parser.parse_stylesheet css in
   let expected_ast =
     ([Rule.Style_rule
         {Style_rule.prelude = (
@@ -734,6 +723,13 @@ let test_class_selector () =
   Alcotest.(check (testable Css_fmt_printer.dump_stylesheet eq_ast))
     "different CSS AST" expected_ast ast
 
+let test_empty_stylesheet () =
+  let css = {||} in
+  let ast = Css.Parser.parse_stylesheet css in
+  let expected_ast = ([], Location.none) in
+  Alcotest.(check (testable Css_fmt_printer.dump_stylesheet eq_ast))
+    "different CSS AST" expected_ast ast
+
 let test_set =
   [("CSS parser", `Quick, test_stylesheet_parser);
    ("CSS functions", `Quick, test_css_functions);
@@ -752,4 +748,5 @@ let test_set =
    (":hover selector", `Quick, test_hover_selector);
    ("id selector", `Quick, test_id_selector);
    ("class selector", `Quick, test_class_selector);
+   ("empty stylesheet", `Quick, test_empty_stylesheet);
   ]

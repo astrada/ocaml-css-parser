@@ -1,6 +1,6 @@
 {
   "name": "ocaml-css-parser",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "CSS parser written in OCaml",
   "license": "MIT",
   "esy": {
@@ -8,13 +8,13 @@
   },
   "dependencies": {
     "@opam/dune": "*",
-    "@opam/alcotest": "^0.8.4",
-    "@opam/menhir": "20181113",
-    "@opam/sedlex": "1.99.4",
-    "ocaml": "~4.6.0"
+    "@opam/alcotest": "^1.0.1",
+    "@opam/menhir": "20200211",
+    "@opam/sedlex": "^2.0.0",
+    "ocaml": "~4.9.0"
   },
   "devDependencies": {
-    "@opam/merlin": "^3.2.2",
-    "ocaml": "~4.6.0"
+    "@opam/merlin": "3.3.3",
+    "ocaml": "~4.9.0"
   }
 }

@@ -1,5 +1,8 @@
 %{
 
+(* Workaround for this dune bug: https://github.com/ocaml/dune/issues/2450 *)
+module Css = struct end
+
 open Types
 
 %}
