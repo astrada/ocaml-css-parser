@@ -1,6 +1,6 @@
 language: node_js
 node_js:
-- 8
+- 12
 os:
 - linux
 - osx
@@ -9,5 +9,4 @@ install:
 - esy install
 script:
 - esy build
-- esy ./_build/default/bin/hello.exe
-- esy x hello
+- esy dune runtest
