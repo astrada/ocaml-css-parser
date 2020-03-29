@@ -738,7 +738,7 @@ let test_negative_numbers () =
       }
     |}
   in
-  let ast = parse_stylesheet css in
+  let ast = Css.Parser.parse_stylesheet css in
   let expected_ast =
     ([Rule.Style_rule
         {Style_rule.prelude = ([], Location.none);
