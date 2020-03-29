@@ -1,6 +1,6 @@
 {
   "name": "ocaml-css-parser",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "CSS parser written in OCaml",
   "license": "MIT",
   "esy": {
