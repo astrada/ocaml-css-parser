@@ -102,7 +102,7 @@ let ident_start = [%sedlex.regexp? ('_' | 'a'..'z' | 'A'..'Z') | non_ascii | esc
 
 let ident_char = [%sedlex.regexp? ('_' | 'a'..'z' | 'A'..'Z' | '0'..'9'| '-') | non_ascii | escape]
 
-let ident = [%sedlex.regexp? Opt ('-'), ident_start, Star ident_char]
+let ident = [%sedlex.regexp? (Opt ('-'), ident_start | '-', '-'), Star ident_char]
 
 let string_quote = [%sedlex.regexp? ('"', Star (Compl ('\n' | '\r' | '\012' | '"') | '\\', newline | escape), '"')]
 

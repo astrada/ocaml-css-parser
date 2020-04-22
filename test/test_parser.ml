@@ -37,7 +37,8 @@ let eq_ast ast1 ast2 =
     | (Function ((n1, _), (b1, _)), Function ((n2, _), (b2, _))) ->
       n1 = n2 &&
       eq_list b1 b2 eq_component_value
-    | _ -> false
+    | _ ->
+      false
   and eq_at_rule r1 r2 =
     let (n1, _) = r1.At_rule.name in
     let (n2, _) = r2.At_rule.name in
@@ -757,6 +758,83 @@ let test_negative_numbers () =
   Alcotest.(check (testable Css_fmt_printer.dump_stylesheet eq_ast))
     "different CSS AST" expected_ast ast
 
+let test_css_variables () =
+  let css =
+    {|
+      {
+        --space-y-reverse: 0;
+        margin-top: calc(0 * calc(1 - var(--space-y-reverse)));
+        margin-bottom: calc(0 * var(--space-y-reverse));
+      }
+    |}
+  in
+  let ast = Css.Parser.parse_stylesheet css in
+  let expected_ast =
+    ([Rule.Style_rule
+        {Style_rule.prelude = ([], Location.none);
+         block =
+           ([Declaration_list.Declaration
+               {Declaration.name = ("--space-y-reverse", Location.none);
+                  value = ([(Component_value.Number "0", Location.none)],
+                           Location.none);
+                  important = (false, Location.none);
+                  loc = Location.none;
+                 };
+             Declaration_list.Declaration
+               {Declaration.name = ("margin-top", Location.none);
+                value = (
+                  [(Component_value.Function (
+                       ("calc", Location.none),
+                       ([(Component_value.Number "0", Location.none);
+                         (Component_value.Delim "*", Location.none);
+                         (Component_value.Function (
+                             ("calc", Location.none),
+                             ([(Component_value.Number "1", Location.none);
+                               (Component_value.Delim "-", Location.none);
+                               (Component_value.Function (
+                                   ("var", Location.none),
+                                   ([(Component_value.Ident
+                                        "--space-y-reverse",
+                                      Location.none);
+                                    ], Location.none)),
+                                Location.none);
+                              ], Location.none)),
+                          Location.none);
+                        ], Location.none)),
+                    Location.none);
+                  ],
+                  Location.none);
+                important = (false, Location.none);
+                loc = Location.none;
+               };
+             Declaration_list.Declaration
+               {Declaration.name = ("margin-bottom", Location.none);
+                value = (
+                  [(Component_value.Function (
+                       ("calc", Location.none),
+                       ([(Component_value.Number "0", Location.none);
+                         (Component_value.Delim "*", Location.none);
+                         (Component_value.Function (
+                             ("var", Location.none),
+                             ([(Component_value.Ident "--space-y-reverse",
+                                Location.none);
+                              ], Location.none)),
+                          Location.none);
+                        ], Location.none)),
+                    Location.none);
+                  ],
+                  Location.none);
+                important = (false, Location.none);
+                loc = Location.none;
+               };
+            ], Location.none);
+         loc = Location.none;
+        };
+     ], Location.none)
+  in
+  Alcotest.(check (testable Css_fmt_printer.dump_stylesheet eq_ast))
+    "different CSS AST" expected_ast ast
+
 let test_set =
   [("CSS parser", `Quick, test_stylesheet_parser);
    ("CSS functions", `Quick, test_css_functions);
@@ -777,4 +855,5 @@ let test_set =
    ("class selector", `Quick, test_class_selector);
    ("empty stylesheet", `Quick, test_empty_stylesheet);
    ("negative values", `Quick, test_negative_numbers);
+   ("CSS variables", `Quick, test_css_variables);
   ]
