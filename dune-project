@@ -16,6 +16,6 @@
  (depends
   (alcotest :with-test)
   (dune (>= 1.6))
-  (mehnhir (>= 20200211))
+  (menhir (>= 20200211))
   (sedlex (>= 2.0))))
 
