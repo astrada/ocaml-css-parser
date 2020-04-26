@@ -15,7 +15,7 @@
  (description "Parses a CSS Level 3 string and produces an AST.")
  (depends
   (alcotest :with-test)
-  (dune (>= 1.6))
+  (dune (>= 2.4))
   (menhir (>= 20200211))
   (sedlex (>= 2.0))))
 
