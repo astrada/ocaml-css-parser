@@ -127,7 +127,7 @@ let at_rule = [%sedlex.regexp? "@", ident]
 
 let at_rule_without_body = [%sedlex.regexp? "@", ("charset" | "import" | "namespace")]
 
-let nested_at_rule = [%sedlex.regexp? "@", ("document" | "keyframes" | "media" | "supports" | "scope")]
+let nested_at_rule = [%sedlex.regexp? "@", ("document" | "keyframes" | "media" | "supports" | "scope" | "-webkit-keyframes" )]
 
 let _a = [%sedlex.regexp? 'A' | 'a']
 let _b = [%sedlex.regexp? 'B' | 'b']
