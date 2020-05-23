@@ -1114,6 +1114,58 @@ let test_css_variables () =
   Alcotest.(check (testable Css_fmt_printer.dump_stylesheet eq_ast))
     "different CSS AST" expected_ast ast
 
+let test_at_rule_scope () =
+  let css = {|
+@scope div {
+  span {
+    color: blue;
+  }
+}
+|} in
+  let ast = Css.Parser.parse_stylesheet css in
+  let expected_ast =
+    ( [
+        Rule.At_rule
+          {
+            At_rule.name = ("scope", Location.none);
+            prelude =
+              ([ (Component_value.Ident "div", Location.none) ], Location.none);
+            block =
+              Brace_block.Stylesheet
+                ( [
+                    Rule.Style_rule
+                      {
+                        Style_rule.prelude =
+                          ( [ (Component_value.Ident "span", Location.none) ],
+                            Location.none );
+                        block =
+                          ( [
+                              Declaration_list.Declaration
+                                {
+                                  Declaration.name = ("color", Location.none);
+                                  value =
+                                    ( [
+                                        ( Component_value.Ident "blue",
+                                          Location.none );
+                                      ],
+                                      Location.none );
+                                  important = (false, Location.none);
+                                  loc = Location.none;
+                                };
+                            ],
+                            Location.none );
+                        loc = Location.none;
+                      };
+                  ],
+                  Location.none );
+            loc = Location.none;
+          };
+      ],
+      Location.none )
+  in
+  Alcotest.(check (testable Css_fmt_printer.dump_stylesheet eq_ast))
+    "different CSS AST" expected_ast ast
+
 let test_set =
   [
     ("CSS parser", `Quick, test_stylesheet_parser);
@@ -1136,4 +1188,5 @@ let test_set =
     ("empty stylesheet", `Quick, test_empty_stylesheet);
     ("negative values", `Quick, test_negative_numbers);
     ("CSS variables", `Quick, test_css_variables);
+    ("@scope", `Quick, test_at_rule_scope);
   ]

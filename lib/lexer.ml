@@ -148,14 +148,11 @@ let at_rule = [%sedlex.regexp? "@", ident]
 let at_rule_without_body =
   [%sedlex.regexp? "@", ("charset" | "import" | "namespace")]
 
-(*Complete list from https://developer.mozilla.org/en-US/docs/Web/CSS/At-rule*)
 let nested_at_rule =
   [%sedlex.regexp?
     ( "@",
-      ( "charset" | "import" | "namespace" | "media" | "supports" | "document"
-      | "page" | "font-face" | "-webkit-keyframes" | "keyframes"
-      | "-ms-viewport" | "-o-viewport" | "viewport" | "counter-style"
-      | "font-feature-values" | "scope" ) )]
+      ( "-webkit-keyframes" | "document" | "keyframes" | "media" | "supports"
+      | "scope" ) )]
 
 let _a = [%sedlex.regexp? 'A' | 'a']
 
