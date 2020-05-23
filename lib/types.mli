@@ -1,10 +1,6 @@
 type 'a with_loc = 'a * Location.t
 
-type dimension =
-  | Length
-  | Angle
-  | Time
-  | Frequency
+type dimension = Length | Angle | Time | Frequency
 
 module rec Component_value : sig
   type t =
@@ -32,42 +28,39 @@ and Brace_block : sig
 end
 
 and At_rule : sig
-  type t =
-    { name: string with_loc;
-      prelude: Component_value.t with_loc list with_loc;
-      block: Brace_block.t;
-      loc: Location.t;
-    }
+  type t = {
+    name : string with_loc;
+    prelude : Component_value.t with_loc list with_loc;
+    block : Brace_block.t;
+    loc : Location.t;
+  }
 end
 
 and Declaration : sig
-  type t =
-    { name: string with_loc;
-      value: Component_value.t with_loc list with_loc;
-      important: bool with_loc;
-      loc: Location.t;
-    }
+  type t = {
+    name : string with_loc;
+    value : Component_value.t with_loc list with_loc;
+    important : bool with_loc;
+    loc : Location.t;
+  }
 end
 
 and Declaration_list : sig
-  type kind =
-    | Declaration of Declaration.t
-    | At_rule of At_rule.t
+  type kind = Declaration of Declaration.t | At_rule of At_rule.t
+
   type t = kind list with_loc
 end
 
 and Style_rule : sig
-  type t =
-    { prelude: Component_value.t with_loc list with_loc;
-      block: Declaration_list.t;
-      loc: Location.t;
-    }
+  type t = {
+    prelude : Component_value.t with_loc list with_loc;
+    block : Declaration_list.t;
+    loc : Location.t;
+  }
 end
 
 and Rule : sig
-  type t =
-    | Style_rule of Style_rule.t
-    | At_rule of At_rule.t
+  type t = Style_rule of Style_rule.t | At_rule of At_rule.t
 end
 
 and Stylesheet : sig
