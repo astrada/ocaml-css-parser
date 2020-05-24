@@ -1166,6 +1166,60 @@ let test_at_rule_scope () =
   Alcotest.(check (testable Css_fmt_printer.dump_stylesheet eq_ast))
     "different CSS AST" expected_ast ast
 
+let test_at_rule_keyframes_with_vendor_prefixes () =
+  let css =
+    {|
+@-webkit-keyframes slidein {}
+@-moz-keyframes slidein {}
+@-o-keyframes slidein {}
+@-ms-keyframes slidein {}
+|}
+  in
+  let ast = Css.Parser.parse_stylesheet css in
+  let expected_ast =
+    ( [
+        Rule.At_rule
+          {
+            At_rule.name = ("-webkit-keyframes", Location.none);
+            prelude =
+              ( [ (Component_value.Ident "slidein", Location.none) ],
+                Location.none );
+            block = Brace_block.Stylesheet ([], Location.none);
+            loc = Location.none;
+          };
+        Rule.At_rule
+          {
+            At_rule.name = ("-moz-keyframes", Location.none);
+            prelude =
+              ( [ (Component_value.Ident "slidein", Location.none) ],
+                Location.none );
+            block = Brace_block.Stylesheet ([], Location.none);
+            loc = Location.none;
+          };
+        Rule.At_rule
+          {
+            At_rule.name = ("-o-keyframes", Location.none);
+            prelude =
+              ( [ (Component_value.Ident "slidein", Location.none) ],
+                Location.none );
+            block = Brace_block.Stylesheet ([], Location.none);
+            loc = Location.none;
+          };
+        Rule.At_rule
+          {
+            At_rule.name = ("-ms-keyframes", Location.none);
+            prelude =
+              ( [ (Component_value.Ident "slidein", Location.none) ],
+                Location.none );
+            block = Brace_block.Stylesheet ([], Location.none);
+            loc = Location.none;
+          };
+      ],
+      Location.none )
+  in
+  Alcotest.(check (testable Css_fmt_printer.dump_stylesheet eq_ast))
+    "different CSS AST" expected_ast ast
+
 let test_set =
   [
     ("CSS parser", `Quick, test_stylesheet_parser);
@@ -1189,4 +1243,7 @@ let test_set =
     ("negative values", `Quick, test_negative_numbers);
     ("CSS variables", `Quick, test_css_variables);
     ("@scope", `Quick, test_at_rule_scope);
+    ( "@keyframes with vendor prefixes",
+      `Quick,
+      test_at_rule_keyframes_with_vendor_prefixes );
   ]

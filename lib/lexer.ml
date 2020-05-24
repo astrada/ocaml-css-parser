@@ -148,11 +148,14 @@ let at_rule = [%sedlex.regexp? "@", ident]
 let at_rule_without_body =
   [%sedlex.regexp? "@", ("charset" | "import" | "namespace")]
 
+let vendor_prefix = [%sedlex.regexp? "-webkit-" | "-moz-" | "-o-" | "-ms-"]
+
 let nested_at_rule =
   [%sedlex.regexp?
     ( "@",
-      ( "-webkit-keyframes" | "document" | "keyframes" | "media" | "supports"
-      | "scope" ) )]
+      ( "document" | "keyframes"
+      | vendor_prefix, "keyframes"
+      | "media" | "supports" | "scope" ) )]
 
 let _a = [%sedlex.regexp? 'A' | 'a']
 
