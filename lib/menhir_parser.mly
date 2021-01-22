@@ -15,6 +15,8 @@ open Types
 %token LEFT_BRACKET
 %token RIGHT_BRACKET
 %token COLON
+%token WHITESPACE_BEFORE_COLON
+%token WHITESPACE_COLON
 %token SEMI_COLON
 %token PERCENTAGE
 %token IMPORTANT
@@ -122,7 +124,7 @@ declaration_or_at_rule:
   ;
 
 declaration:
-  n = IDENT; COLON; v = list(component_value_with_loc); i = boption(IMPORTANT) {
+  n = IDENT; option(WHITESPACE_BEFORE_COLON); COLON; v = list(component_value_with_loc); i = boption(IMPORTANT) {
     { Declaration.name = (n, Lex_buffer.make_loc_and_fix $startpos(n) $endpos(n));
       value = (v, Lex_buffer.make_loc_and_fix $startpos(v) $endpos(v));
       important = (i, Lex_buffer.make_loc_and_fix $startpos(i) $endpos(i));
@@ -151,6 +153,8 @@ component_value:
   | u = URI { Component_value.Uri u }
   | o = OPERATOR { Component_value.Operator o }
   | d = DELIM { Component_value.Delim d }
+  | COLON { Component_value.Delim ":" }
+  | WHITESPACE_BEFORE_COLON { Component_value.Delim "*" }
   | COLON { Component_value.Delim ":" }
   | f = FUNCTION; xs = list(component_value_with_loc); RIGHT_PAREN {
       Component_value.Function ((f, Lex_buffer.make_loc_and_fix $startpos(f) $endpos(f)),

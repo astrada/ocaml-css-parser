@@ -8,7 +8,8 @@ module Sedlexing = Lex_buffer
 exception LexingError of (Lexing.position * string)
 (** Signals a lexing error at the provided source location.  *)
 
-exception ParseError of (Menhir_parser.token * Lexing.position * Lexing.position)
+exception
+  ParseError of (Menhir_parser.token * Lexing.position * Lexing.position)
 (** Signals a parsing error at the provided token and its start and end
  * locations. *)
 
@@ -39,6 +40,8 @@ let token_to_string = function
   | LEFT_BRACKET -> "["
   | RIGHT_BRACKET -> "]"
   | COLON -> ":"
+  | WHITESPACE_BEFORE_COLON -> "*"
+  | WHITESPACE_COLON -> "*:"
   | SEMI_COLON -> ";"
   | PERCENTAGE -> "%"
   | IMPORTANT -> "!important"
@@ -242,31 +245,31 @@ let time = [%sedlex.regexp? _s | _m, _s]
 
 let frequency = [%sedlex.regexp? _h, _z | _k, _h, _z]
 
+(* Returns true if white spaces were discarded *)
 let discard_comments_and_white_spaces buf =
-  let rec discard_white_spaces buf =
+  let rec discard_white_spaces buf spaces_detected =
     match%sedlex buf with
-    | Plus white_space -> discard_white_spaces buf
-    | "/*" -> discard_comments buf
-    | _ -> ()
-  and discard_comments buf =
+    | Plus white_space -> discard_white_spaces buf true
+    | "/*" -> discard_comments buf spaces_detected
+    | _ -> spaces_detected
+  and discard_comments buf spaces_detected =
     match%sedlex buf with
     | eof ->
         raise (LexingError (buf.Lex_buffer.pos, "Unterminated comment at EOF"))
-    | "*/" -> discard_white_spaces buf
-    | any -> discard_comments buf
+    | "*/" -> discard_white_spaces buf spaces_detected
+    | any -> discard_comments buf spaces_detected
     | _ -> assert false
   in
-  discard_white_spaces buf
+  discard_white_spaces buf false
 
-let rec get_next_token buf =
-  discard_comments_and_white_spaces buf;
+let rec get_next_token buf spaces_detected =
   let open Menhir_parser in
   match%sedlex buf with
   | eof -> EOF
   | ';' -> SEMI_COLON
   | '}' -> RIGHT_BRACE
   | '{' -> LEFT_BRACE
-  | ':' -> COLON
+  | ':' -> if spaces_detected then WHITESPACE_COLON else COLON
   | '(' -> LEFT_PAREN
   | ')' -> RIGHT_PAREN
   | '[' -> LEFT_BRACKET
@@ -311,19 +314,28 @@ and get_url url buf =
              "Unexpected token: " ^ Lex_buffer.latin1 buf ^ " parsing an URI" ))
   | _ -> assert false
 
-let get_next_token_with_location buf =
-  discard_comments_and_white_spaces buf;
+let token_queue = Queue.create ()
+
+let queue_next_token_with_location buf =
+  let spaces_detected = discard_comments_and_white_spaces buf in
   let loc_start = Lex_buffer.next_loc buf in
-  let token = get_next_token buf in
+  let token = get_next_token buf spaces_detected in
   let loc_end = Lex_buffer.next_loc buf in
-  (token, loc_start, loc_end)
+  match token with
+  | Menhir_parser.WHITESPACE_COLON ->
+      Queue.add
+        (Menhir_parser.WHITESPACE_BEFORE_COLON, loc_start, loc_end)
+        token_queue;
+      Queue.add (Menhir_parser.COLON, loc_start, loc_end) token_queue
+  | _ -> Queue.add (token, loc_start, loc_end) token_queue
 
 let parse buf p =
   let last_token =
     ref (Menhir_parser.EOF, Lexing.dummy_pos, Lexing.dummy_pos)
   in
   let next_token () =
-    last_token := get_next_token_with_location buf;
+    if Queue.is_empty token_queue then queue_next_token_with_location buf;
+    last_token := Queue.take token_queue;
     !last_token
   in
   try MenhirLib.Convert.Simplified.traditional2revised p next_token with
@@ -331,7 +343,7 @@ let parse buf p =
   | _ -> raise (ParseError !last_token)
 
 let parse_string ?container_lnum ?pos s p =
-  ( match container_lnum with
+  (match container_lnum with
   | None -> ()
-  | Some lnum -> Lex_buffer.container_lnum_ref := lnum );
+  | Some lnum -> Lex_buffer.container_lnum_ref := lnum);
   parse (Lex_buffer.of_ascii_string ?pos s) p
