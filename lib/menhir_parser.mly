@@ -15,8 +15,11 @@ open Types
 %token LEFT_BRACKET
 %token RIGHT_BRACKET
 %token COLON
-%token WHITESPACE_BEFORE_COLON
-%token WHITESPACE_COLON
+%token DOT
+(* Whitespaces are detected only in selectors, before ":", ".", and "#", to
+ * disambiguate between "p :first-child" and "p:first-child", these
+ * whitespaces are replaced with "*" *)
+%token WHITESPACE
 %token SEMI_COLON
 %token PERCENTAGE
 %token IMPORTANT
@@ -101,7 +104,7 @@ prelude_with_loc:
   ;
 
 prelude:
-  xs = list(component_value_with_loc) { xs }
+  xs = list(component_value_with_loc_in_prelude) { xs }
   ;
 
 declarations_with_loc:
@@ -124,7 +127,7 @@ declaration_or_at_rule:
   ;
 
 declaration:
-  n = IDENT; option(WHITESPACE_BEFORE_COLON); COLON; v = list(component_value_with_loc); i = boption(IMPORTANT) {
+  n = IDENT; option(WHITESPACE); COLON; v = list(component_value_with_loc); i = boption(IMPORTANT) {
     { Declaration.name = (n, Lex_buffer.make_loc_and_fix $startpos(n) $endpos(n));
       value = (v, Lex_buffer.make_loc_and_fix $startpos(v) $endpos(v));
       important = (i, Lex_buffer.make_loc_and_fix $startpos(i) $endpos(i));
@@ -153,9 +156,34 @@ component_value:
   | u = URI { Component_value.Uri u }
   | o = OPERATOR { Component_value.Operator o }
   | d = DELIM { Component_value.Delim d }
+  | option(WHITESPACE); COLON { Component_value.Delim ":" }
+  | option(WHITESPACE); DOT { Component_value.Delim "." }
+  | f = FUNCTION; xs = list(component_value_with_loc); RIGHT_PAREN {
+      Component_value.Function ((f, Lex_buffer.make_loc_and_fix $startpos(f) $endpos(f)),
+                                (xs, Lex_buffer.make_loc_and_fix $startpos(xs) $endpos(xs)))
+    }
+  | option(WHITESPACE); h = HASH { Component_value.Hash h }
+  | n = NUMBER { Component_value.Number n }
+  | r = UNICODE_RANGE { Component_value.Unicode_range r }
+  | d = FLOAT_DIMENSION { Component_value.Float_dimension d }
+  | d = DIMENSION { Component_value.Dimension d }
+  ;
+
+component_value_with_loc_in_prelude:
+  | c = component_value_in_prelude { (c, Lex_buffer.make_loc_and_fix $startpos $endpos) }
+
+component_value_in_prelude:
+  | b = paren_block { Component_value.Paren_block b }
+  | b = bracket_block { Component_value.Bracket_block b }
+  | n = NUMBER; PERCENTAGE { Component_value.Percentage n }
+  | i = IDENT { Component_value.Ident i }
+  | s = STRING { Component_value.String s }
+  | u = URI { Component_value.Uri u }
+  | o = OPERATOR { Component_value.Operator o }
+  | d = DELIM { Component_value.Delim d }
+  | WHITESPACE { Component_value.Delim "*" }
   | COLON { Component_value.Delim ":" }
-  | WHITESPACE_BEFORE_COLON { Component_value.Delim "*" }
-  | COLON { Component_value.Delim ":" }
+  | DOT { Component_value.Delim "." }
   | f = FUNCTION; xs = list(component_value_with_loc); RIGHT_PAREN {
       Component_value.Function ((f, Lex_buffer.make_loc_and_fix $startpos(f) $endpos(f)),
                                 (xs, Lex_buffer.make_loc_and_fix $startpos(xs) $endpos(xs)))

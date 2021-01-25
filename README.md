@@ -48,3 +48,12 @@ let css =
   *)
 ```
 
+### Remarks
+
+Whitespaces and comments are discarded by the lexer, so they are not available
+to the parser. An exception is made for significant whitespaces in rule
+preludes, to disambiguate between selectors like `p :first-child` and
+`p:first-child`. These whitespaces are replaced with `*` to keep CSS semantics
+intact. So, e.g., `p :first-child` is parsed as `p *:first-child`, `p .class`
+as `p *.class`, and `p #id` as `p *#id`.
+

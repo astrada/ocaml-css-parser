@@ -40,8 +40,11 @@ let token_to_string = function
   | LEFT_BRACKET -> "["
   | RIGHT_BRACKET -> "]"
   | COLON -> ":"
-  | WHITESPACE_BEFORE_COLON -> "*"
-  | WHITESPACE_COLON -> "*:"
+  | DOT -> "."
+  (* Whitespaces are detected only in selectors, before ":", ".", and "#", to
+   * disambiguate between "p :first-child" and "p:first-child", these
+   * whitespaces are replaced with "*" *)
+  | WHITESPACE -> "*"
   | SEMI_COLON -> ";"
   | PERCENTAGE -> "%"
   | IMPORTANT -> "!important"
@@ -262,34 +265,39 @@ let discard_comments_and_white_spaces buf =
   in
   discard_white_spaces buf false
 
-let rec get_next_token buf spaces_detected =
+let rec get_next_tokens buf spaces_detected =
   let open Menhir_parser in
   match%sedlex buf with
-  | eof -> EOF
-  | ';' -> SEMI_COLON
-  | '}' -> RIGHT_BRACE
-  | '{' -> LEFT_BRACE
-  | ':' -> if spaces_detected then WHITESPACE_COLON else COLON
-  | '(' -> LEFT_PAREN
-  | ')' -> RIGHT_PAREN
-  | '[' -> LEFT_BRACKET
-  | ']' -> RIGHT_BRACKET
-  | '%' -> PERCENTAGE
-  | operator -> OPERATOR (Lex_buffer.latin1 buf)
-  | string -> STRING (Lex_buffer.latin1 ~skip:1 ~drop:1 buf)
-  | "url(" -> get_url "" buf
-  | important -> IMPORTANT
-  | nested_at_rule -> NESTED_AT_RULE (Lex_buffer.latin1 ~skip:1 buf)
-  | at_rule_without_body -> AT_RULE_WITHOUT_BODY (Lex_buffer.latin1 ~skip:1 buf)
-  | at_rule -> AT_RULE (Lex_buffer.latin1 ~skip:1 buf)
+  | eof -> [ EOF ]
+  | ';' -> [ SEMI_COLON ]
+  | '}' -> [ RIGHT_BRACE ]
+  | '{' -> [ LEFT_BRACE ]
+  | ':' -> if spaces_detected then [ WHITESPACE; COLON ] else [ COLON ]
+  | '.' -> if spaces_detected then [ WHITESPACE; DOT ] else [ DOT ]
+  | '(' -> [ LEFT_PAREN ]
+  | ')' -> [ RIGHT_PAREN ]
+  | '[' -> [ LEFT_BRACKET ]
+  | ']' -> [ RIGHT_BRACKET ]
+  | '%' -> [ PERCENTAGE ]
+  | operator -> [ OPERATOR (Lex_buffer.latin1 buf) ]
+  | string -> [ STRING (Lex_buffer.latin1 ~skip:1 ~drop:1 buf) ]
+  | "url(" -> [ get_url "" buf ]
+  | important -> [ IMPORTANT ]
+  | nested_at_rule -> [ NESTED_AT_RULE (Lex_buffer.latin1 ~skip:1 buf) ]
+  | at_rule_without_body ->
+      [ AT_RULE_WITHOUT_BODY (Lex_buffer.latin1 ~skip:1 buf) ]
+  | at_rule -> [ AT_RULE (Lex_buffer.latin1 ~skip:1 buf) ]
   (* NOTE: should be placed above ident, otherwise pattern with
    * '-[0-9a-z]{1,6}' cannot be matched *)
-  | _u, '+', unicode_range -> UNICODE_RANGE (Lex_buffer.latin1 buf)
-  | ident, '(' -> FUNCTION (Lex_buffer.latin1 ~drop:1 buf)
-  | ident -> IDENT (Lex_buffer.latin1 buf)
-  | '#', name -> HASH (Lex_buffer.latin1 ~skip:1 buf)
-  | number -> get_dimension (Lex_buffer.latin1 buf) buf
-  | any -> DELIM (Lex_buffer.latin1 buf)
+  | _u, '+', unicode_range -> [ UNICODE_RANGE (Lex_buffer.latin1 buf) ]
+  | ident, '(' -> [ FUNCTION (Lex_buffer.latin1 ~drop:1 buf) ]
+  | ident -> [ IDENT (Lex_buffer.latin1 buf) ]
+  | '#', name ->
+      if spaces_detected then
+        [ WHITESPACE; HASH (Lex_buffer.latin1 ~skip:1 buf) ]
+      else [ HASH (Lex_buffer.latin1 ~skip:1 buf) ]
+  | number -> [ get_dimension (Lex_buffer.latin1 buf) buf ]
+  | any -> [ DELIM (Lex_buffer.latin1 buf) ]
   | _ -> assert false
 
 and get_dimension n buf =
@@ -316,25 +324,19 @@ and get_url url buf =
 
 let token_queue = Queue.create ()
 
-let queue_next_token_with_location buf =
+let queue_next_tokens_with_location buf =
   let spaces_detected = discard_comments_and_white_spaces buf in
   let loc_start = Lex_buffer.next_loc buf in
-  let token = get_next_token buf spaces_detected in
+  let tokens = get_next_tokens buf spaces_detected in
   let loc_end = Lex_buffer.next_loc buf in
-  match token with
-  | Menhir_parser.WHITESPACE_COLON ->
-      Queue.add
-        (Menhir_parser.WHITESPACE_BEFORE_COLON, loc_start, loc_end)
-        token_queue;
-      Queue.add (Menhir_parser.COLON, loc_start, loc_end) token_queue
-  | _ -> Queue.add (token, loc_start, loc_end) token_queue
+  List.iter (fun t -> Queue.add (t, loc_start, loc_end) token_queue) tokens
 
 let parse buf p =
   let last_token =
     ref (Menhir_parser.EOF, Lexing.dummy_pos, Lexing.dummy_pos)
   in
   let next_token () =
-    if Queue.is_empty token_queue then queue_next_token_with_location buf;
+    if Queue.is_empty token_queue then queue_next_tokens_with_location buf;
     last_token := Queue.take token_queue;
     !last_token
   in

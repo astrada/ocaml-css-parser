@@ -899,7 +899,7 @@ let test_hover_selector () =
 
 let test_id_selector () =
   let css = {|
-#element {
+#id {
   color: blue
 }
 |} in
@@ -909,7 +909,10 @@ let test_id_selector () =
         Rule.Style_rule
           {
             Style_rule.prelude =
-              ( [ (Component_value.Hash "element", Location.none) ],
+              ( [
+                  (Component_value.Delim "*", Location.none);
+                  (Component_value.Hash "id", Location.none);
+                ],
                 Location.none );
             block =
               ( [
@@ -934,7 +937,7 @@ let test_id_selector () =
 
 let test_class_selector () =
   let css = {|
-.element {
+.classname {
   color: blue
 }
 |} in
@@ -945,8 +948,9 @@ let test_class_selector () =
           {
             Style_rule.prelude =
               ( [
+                  (Component_value.Delim "*", Location.none);
                   (Component_value.Delim ".", Location.none);
-                  (Component_value.Ident "element", Location.none);
+                  (Component_value.Ident "classname", Location.none);
                 ],
                 Location.none );
             block =
@@ -1261,6 +1265,45 @@ p :first-child {
   Alcotest.(check (testable Css_fmt_printer.dump_stylesheet eq_ast))
     "different CSS AST" expected_ast ast
 
+let test_p_first_child_selector () =
+  let css = {|
+p:first-child {
+  color: blue
+}
+|} in
+  let ast = Css.Parser.parse_stylesheet css in
+  let expected_ast =
+    ( [
+        Rule.Style_rule
+          {
+            Style_rule.prelude =
+              ( [
+                  (Component_value.Ident "p", Location.none);
+                  (Component_value.Delim ":", Location.none);
+                  (Component_value.Ident "first-child", Location.none);
+                ],
+                Location.none );
+            block =
+              ( [
+                  Declaration_list.Declaration
+                    {
+                      Declaration.name = ("color", Location.none);
+                      value =
+                        ( [ (Component_value.Ident "blue", Location.none) ],
+                          Location.none );
+                      important = (false, Location.none);
+                      loc = Location.none;
+                    };
+                ],
+                Location.none );
+            loc = Location.none;
+          };
+      ],
+      Location.none )
+  in
+  Alcotest.(check (testable Css_fmt_printer.dump_stylesheet eq_ast))
+    "different CSS AST" expected_ast ast
+
 let test_p_star_space_first_child_selector () =
   let css = {|
 p * :first-child {
@@ -1302,9 +1345,9 @@ p * :first-child {
   Alcotest.(check (testable Css_fmt_printer.dump_stylesheet eq_ast))
     "different CSS AST" expected_ast ast
 
-let test_p_first_child_selector () =
+let test_p_space_dot_classname () =
   let css = {|
-p:first-child {
+p .classname {
   color: blue
 }
 |} in
@@ -1316,8 +1359,48 @@ p:first-child {
             Style_rule.prelude =
               ( [
                   (Component_value.Ident "p", Location.none);
-                  (Component_value.Delim ":", Location.none);
-                  (Component_value.Ident "first-child", Location.none);
+                  (Component_value.Delim "*", Location.none);
+                  (Component_value.Delim ".", Location.none);
+                  (Component_value.Ident "classname", Location.none);
+                ],
+                Location.none );
+            block =
+              ( [
+                  Declaration_list.Declaration
+                    {
+                      Declaration.name = ("color", Location.none);
+                      value =
+                        ( [ (Component_value.Ident "blue", Location.none) ],
+                          Location.none );
+                      important = (false, Location.none);
+                      loc = Location.none;
+                    };
+                ],
+                Location.none );
+            loc = Location.none;
+          };
+      ],
+      Location.none )
+  in
+  Alcotest.(check (testable Css_fmt_printer.dump_stylesheet eq_ast))
+    "different CSS AST" expected_ast ast
+
+let test_p_space_hash_id () =
+  let css = {|
+p #id {
+  color: blue
+}
+|} in
+  let ast = Css.Parser.parse_stylesheet css in
+  let expected_ast =
+    ( [
+        Rule.Style_rule
+          {
+            Style_rule.prelude =
+              ( [
+                  (Component_value.Ident "p", Location.none);
+                  (Component_value.Delim "*", Location.none);
+                  (Component_value.Hash "id", Location.none);
                 ],
                 Location.none );
             block =
@@ -1370,4 +1453,6 @@ let test_set =
     ("p :first-child selector", `Quick, test_p_space_first_child_selector);
     ("p:first-child selector", `Quick, test_p_first_child_selector);
     ("p * :first-child selector", `Quick, test_p_star_space_first_child_selector);
+    ("p .classname selector", `Quick, test_p_space_dot_classname);
+    ("p #id selector", `Quick, test_p_space_hash_id);
   ]
