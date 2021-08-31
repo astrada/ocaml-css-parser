@@ -239,7 +239,8 @@ let length =
     | _i, _n
     | _p, _c
     | _p, _t
-    | _p, _x )]
+    | _p, _x
+    | _f, _r )]
 
 let angle =
   [%sedlex.regexp? _d, _e, _g | _g, _r, _a, _d | _r, _a, _d | _t, _u, _r, _n]
